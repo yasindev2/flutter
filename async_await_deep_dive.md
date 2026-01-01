@@ -6,39 +6,80 @@ When you write `await`, you are telling the Dart VM: *"Take everything after thi
 
 ---
 
-## 1. The Visual Flow: Suspension and Resumption
+## 1. The Master Lifecycle: From Call to Completion
 
-When an `async` function hits an `await`, the execution of that function is **suspended**. Control returns to the caller immediately.
+This unified diagram shows exactly what happens to the execution flow and the thread after the initial `Future` is returned.
 
 ```mermaid
 graph TD
-    subgraph "Execution Context"
-        A[Sync Call: asyncFunction] --> B[Execute until 'await']
-        B --> C{Hits await?}
+    %% Initial Phase
+    Start([1. Caller calls asyncFunction]) --> SyncExec[2. Executes Synchronously until 'await']
+    SyncExec --> EvalAwait[3. Evaluate awaited expression]
+
+    %% The Suspension
+    subgraph "Phase A: The Suspension (The Breakup)"
+        EvalAwait --> CreateFut[4. Create internal Future]
+        CreateFut --> SaveFrame[5. Save Stack Frame to Heap]
+        SaveFrame --> ReturnFut[6. Return uncompleted Future to Caller]
     end
 
-    subgraph "The Suspension (Immediate)"
-        C -- Yes --> D["1. Create Future&lt;T&gt;"]
-        D --> E["2. Save Stack Frame to Heap"]
-        E --> F["3. Return Future&lt;T&gt; to Caller"]
+    %% The Free Period
+    ReturnFut --> ThreadFree{7. Thread is Free!}
+    ThreadFree -- "Can do unrelated work" --> EventLoop[8. Event Loop: UI / Timers / frames]
+    ThreadFree -- "Wait for I/O" --> OSWork[9. OS: Network/File Work]
+
+    %% The Trigger
+    OSWork --> EventQueued[10. OS signals completion -> Event Queue]
+    
+    %% The Resumption
+    subgraph "Phase B: The Resumption (The Reunion)"
+        EventQueued --> LoopPicks[11. Event Loop picks Event]
+        LoopPicks --> CompleteFut[12. Completes Internal Future]
+        CompleteFut --> SchedMicro[13. Schedules Microtask: Continuation]
+        SchedMicro --> MicroExec[14. Processor drains Microtask Queue]
+        MicroExec --> LoadFrame[15. LOAD Stack Frame from Heap]
+        LoadFrame --> Resume[16. Execution Resumes after 'await']
     end
 
-    subgraph "The Event Loop Handshake"
-        G[External Work Finishes] --> H[Event Queue: OS Notification]
-        H --> I[Event Loop processes Entry]
-        I --> J[Completes original Future]
-        J --> K[Microtask Queue: Scheduled]
-    end
-
-    subgraph "The Resumption"
-        K --> L[Restore Stack Frame from Heap]
-        L --> M[Resume execution after 'await']
-    end
+    %% The End
+    Resume --> EndFunc[17. Function returns / completes original Future]
+    
+    %% Styling
+    style ThreadFree fill:#f9f,stroke:#333,stroke-width:2px
+    style SaveFrame fill:#f96,stroke:#333
+    style LoadFrame fill:#f96,stroke:#333
+    style ReturnFut fill:#69f,stroke:#333,stroke-dasharray: 5 5
 ```
 
 ---
 
-## 2. In the Background: The Event Loop Perspective
+## 2. What are "Stack Frames"?
+
+To understand suspension, you must understand the **Stack Frame**. Think of a Frame as the "Snapshot" of a function's current physical state.
+
+### The Anatomy of a Frame
+Whenever a function is called, Dart's memory allocator carves out a block of memory (a Frame) that contains:
+1.  **Local Variables**: Any variables declared inside the function (e.g., `int i = 0`).
+2.  **Arguments**: The values passed into the function.
+3.  **Instruction Pointer (IP)**: Exactly which line of code the CPU is currently reading.
+4.  **Return Address**: Where to go when this function finishes.
+
+### Suspension: Moving the Frame
+In a standard synchronous function, the frame lives on the **C-Stack** (very fast, but volatile). 
+
+When you `await`:
+-   Dart **vacates** the stack. It physically copies your Frame (variables, IP, etc.) from the volatile stack into the **Heap** (permanent memory).
+-   This is why we say the function is "suspended." The CPU literally forgets about it until it's pulled back.
+
+### Resumption: Restoring the Frame
+When the Microtask runs:
+-   Dart finds your saved Frame on the Heap.
+-   It copies it **back onto the Stack**.
+-   It looks at the **Instruction Pointer** and says: *"Ah, we were on line 42. Let's start from line 43."*
+
+---
+
+## 3. In the Background: The Event Loop Perspective
 
 As a senior engineer, you must visualize what happens in the **Microtask Queue** versus the **Event Queue**.
 
