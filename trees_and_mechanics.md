@@ -34,7 +34,32 @@ How does Flutter stay fast? When you call `setState()`, Flutter doesn't destroy 
 
 ## 3. Visualizing the Magic
 
-![Flutter Trees](https://docs.flutter.dev/assets/images/docs/archoverview/trees.png)
+```mermaid
+graph LR
+    subgraph "Widget Tree (Blueprint)"
+        W1[Stateless / Stateful] --- W2[Padding] --- W3[Text]
+    end
+    
+    subgraph "Element Tree (Lifecycle)"
+        E1[ComponentElement] --- E2[ProxyElement] --- E3[LeafElement]
+    end
+    
+    subgraph "Render Tree (Geometry)"
+        R1[RenderBox] --- R2[RenderStack] --- R3[RenderParagraph]
+    end
+    
+    W1 -.-> E1
+    E1 -.-> R1
+    
+    W2 -.-> E2
+    
+    W3 -.-> E3
+    E3 -.-> R3
+    
+    style W1 fill:#e1f5fe,stroke:#01579b
+    style E1 fill:#f3e5f5,stroke:#4a148c
+    style R1 fill:#fff3e0,stroke:#e65100
+```
 
 ---
 

@@ -60,7 +60,22 @@ class MyState extends State<MyWidget> {
 
 ## 4. Visualizing Memory Segments
 
-![Dart Heap](https://dart.dev/guides/language/images/garbage-collection.png)
+```mermaid
+graph TD
+    subgraph "Dart Heap"
+        subgraph "Young Gen (Short-Lived)"
+            S1[Widget A] --- S2[Widget B] --- S3[Widget C]
+        end
+        subgraph "Old Gen (Long-Lived)"
+            L1[Data Model] --- L2[Service] --- L3[Global State]
+        end
+    end
+    
+    S3 -- "Survives GC Cycles" --> L1
+    
+    style S1 fill:#ffcdd2,stroke:#c62828
+    style L1 fill:#c8e6c9,stroke:#2e7d32
+```
 
 ---
 

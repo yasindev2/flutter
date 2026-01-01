@@ -48,7 +48,33 @@ The boundary between the Engine and the Framework is bridge-based but highly opt
 
 ## 4. Visualizing the Architecture
 
-![Flutter Architecture](https://docs.flutter.dev/assets/images/docs/archoverview/archoverview.png)
+```mermaid
+graph TD
+    subgraph "Framework (Dart)"
+        F1[Material / Cupertino] --> F2[Widgets]
+        F2 --> F3[Rendering]
+        F3 --> F4[Animation / Gestures / Foundation]
+    end
+    
+    subgraph "Engine (C++)"
+        E1[Dart VM]
+        E2[Impeller / Skia]
+        E3[Text Settlement]
+    end
+    
+    subgraph "Embedder (Platform-Specific)"
+        B1[Android] --- B2[iOS] --- B3[Web] --- B4[Desktop]
+    end
+    
+    F4 <==> E1
+    F4 <==> E2
+    E1 <==> B1
+    E2 <==> B1
+    
+    style F1 fill:#42a5f5,stroke:#333,stroke-width:2px,color:#fff
+    style E1 fill:#66bb6a,stroke:#333,stroke-width:2px,color:#fff
+    style B1 fill:#ffa726,stroke:#333,stroke-width:2px,color:#fff
+```
 
 ---
 

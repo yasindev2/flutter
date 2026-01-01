@@ -39,7 +39,20 @@ In the Paint phase, Flutter doesn't draw pixels—it records **Display Lists** (
 
 ## 4. Visualizing the Pipeline
 
-![Flutter Pipeline](https://docs.flutter.dev/assets/images/docs/archoverview/pipeline.png)
+```mermaid
+graph TD
+    V[VSYNC Trigger] --> A[Animate]
+    A --> B[Build]
+    B --> L[Layout]
+    L --> P[Paint]
+    P --> C[Compositing]
+    C --> R[Rasterize]
+    R --> D[Display Pixel]
+    
+    style V fill:#ffeb3b,stroke:#333,stroke-width:2px,color:#000
+    style D fill:#4caf50,stroke:#333,stroke-width:2px,color:#fff
+    style R fill:#f44336,stroke:#333,stroke-width:2px,color:#fff
+```
 
 ---
 

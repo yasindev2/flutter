@@ -73,7 +73,23 @@ Future<List<Data>> fetchAndParseHeavy() async {
 
 ## 4. Visualizing Concurrency
 
-![Dart Concurrency](https://dart.dev/assets/img/event-loop.png)
+```mermaid
+graph LR
+    subgraph "Main Isolate (UI Thread)"
+        M[Main Code] --- RP[ReceivePort]
+    end
+    
+    subgraph "Background Isolate (Worker)"
+        W[Heavy Task] --- SP[SendPort]
+    end
+    
+    SP -- "Message (Data Copy)" --> RP
+    RP -- "Listen" --> M
+    
+    style M fill:#bbdefb,stroke:#1976d2
+    style W fill:#c8e6c9,stroke:#388e3c
+    style RP fill:#fff9c4,stroke:#fbc02d
+```
 
 ---
 
