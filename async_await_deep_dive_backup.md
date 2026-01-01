@@ -11,29 +11,23 @@ When you write `await`, you are telling the Dart VM: *"Take everything after thi
 When an `async` function hits an `await`, the execution of that function is **suspended**. Control returns to the caller immediately.
 
 ```mermaid
-graph TD
-    subgraph "Execution Context"
-        A[Sync Call: asyncFunction] --> B[Execute until 'await']
-        B --> C{Hits await?}
-    end
+sequenceDiagram
+    participant C as Caller (Sync)
+    participant A as Async Function
+    participant E as Event Loop
+    participant F as Future (The Work)
 
-    subgraph "The Suspension (Immediate)"
-        C -- Yes --> D["1. Create Future&lt;T&gt;"]
-        D --> E["2. Save Stack Frame to Heap"]
-        E --> F["3. Return Future&lt;T&gt; to Caller"]
-    end
-
-    subgraph "The Event Loop Handshake"
-        G[External Work Finishes] --> H[Event Queue: OS Notification]
-        H --> I[Event Loop processes Entry]
-        I --> J[Completes original Future]
-        J --> K[Microtask Queue: Scheduled]
-    end
-
-    subgraph "The Resumption"
-        K --> L[Restore Stack Frame from Heap]
-        L --> M[Resume execution after 'await']
-    end
+    C->>A: Calls asyncFunction()
+    A->>A: Executes sync code until 'await'
+    A->>F: Starts async work (e.g., Timer/IO)
+    Note over A: SUSPENSION POINT
+    A-->>C: Returns uncompleted Future<T>
+    Note over C: Caller continues sync execution
+    
+    F->>E: Work completes -> Queue Completion Event
+    E->>A: Pulls continuation from Microtask Queue
+    A->>A: Resumes execution after 'await'
+    A-->>C: Completes the original Future<T>
 ```
 
 ---
@@ -115,32 +109,9 @@ Resumption is placed in the **Microtask Queue** because:
 > [!IMPORTANT]
 > **Memory Perspective**: When a function is suspended, it is moved from the **Stack** (active execution) to the **Heap** (stored state). When it resumes, it is pulled back onto the stack.
 
-### Visualizing Memory vs Execution (MD Version)
+![Suspension Concept](suspension_concept.png)
 
-> [!IMPORTANT]
-> **Memory Perspective**: When a function is suspended, it is moved from the **Stack** (active execution) to the **Heap** (stored state). When it resumes, it is pulled back onto the stack.
-
-```mermaid
-graph LR
-    subgraph "CPU Stack (Active)"
-        S1[Frame 1]
-        S2[Frame 2]
-        await["[awaiting...]"]
-    end
-
-    subgraph "The Heap (Suspended)"
-        H1["Continuation 1 (State)"]
-        H2["Continuation 2 (State)"]
-    end
-
-    await -- "On Await: Save" --> H1
-    H1 -- "On Resumption: Restore" --> S2
-
-    style await fill:#f96,stroke:#333
-    style H1 fill:#69f,stroke:#333
-```
-
-*The diagram above illustrates the transition: Code moves from the **Execution Stack** to a **Suspended State (Heap)**, then enters the **Microtask Queue** to eventually return to the Stack.*
+*The image above illustrates the transition of code from the active execution stack to a "sleeping" state in memory, awaiting its turn in the microtask queue.*
 
 ---
 
