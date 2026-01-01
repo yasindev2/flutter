@@ -97,7 +97,29 @@ This is not one task; it is **four distinct segments** of execution interleaved 
 
 ## 4. Visualizing the Dual-Queue System
 
-![Dart Event Loop](https://dart.dev/assets/img/event-loop.png)
+Instead of a single line, think of the event loop as a priority-aware processor managing two distinct FIFO (First-In-First-Out) buffers.
+
+```mermaid
+graph LR
+    subgraph "Microtask Queue (High Priority)"
+        M1[microtask] --- M2[microtask] --- M3[microtask]
+    end
+    subgraph "Event Queue (Low Priority)"
+        E1[UI Tap] --- E2[Timer] --- E3[I/O]
+    end
+    
+    Processor((Event Loop))
+    
+    M1 --> Processor
+    Processor -- "If Microtasks Empty" --> E1
+    
+    style M1 fill:#f96,stroke:#333,stroke-width:2px
+    style E1 fill:#69f,stroke:#333,stroke-width:2px
+    style Processor fill:#cfc,stroke:#333,stroke-width:4px
+```
+
+> [!TIP]
+> **Priority Rule**: The processor is "hungry" for microtasks. It will eat everything in the orange queue before it even looks at the blue queue. Every time a task completes, it checks orange again.
 
 ---
 
