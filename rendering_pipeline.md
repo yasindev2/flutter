@@ -25,6 +25,19 @@ The most critical part of understanding Flutter performance is the Layout phase.
 
 > [!WARNING]
 > **Relayout Boundaries**: As a senior, you MUST use `SizedBox` or fixed constraints to establish "Relayout Boundaries." Without them, a single child's size change could force the entire tree to re-layout.
+> 
+> ```mermaid
+> graph TD
+>     subgraph "Relayout Boundary (SizedBox)"
+>         B[Boundary] --- C1[Child 1]
+>         B --- C2[Child 2]
+>     end
+>     Root --- A[Ancestor]
+>     A --- B
+>     
+>     style B fill:#e0f2fe,stroke:#0369a1,stroke-width:4px
+>     style C1 fill:#f8fafc,stroke:#64748b
+> ```
 
 ---
 
@@ -53,6 +66,26 @@ graph TD
     style D fill:#4caf50,stroke:#333,stroke-width:2px,color:#fff
     style R fill:#f44336,stroke:#333,stroke-width:2px,color:#fff
 ```
+
+### CPU vs GPU: The Execution Split
+
+A "PhD" engineer knows exactly which work happens on which processor.
+
+```mermaid
+gantt
+    title Frame Lifecycle (16ms @ 60fps)
+    dateFormat  X
+    axisFormat %s
+    
+    section CPU (UI Thread)
+    Animate/Build/Layout/Paint :0, 8
+    
+    section GPU (Raster Thread)
+    Compositing/Rasterization :8, 16
+```
+
+> [!TIP]
+> **The 8ms Rule**: While you have 16ms for a full frame, the CPU should ideally finish its work in **<8ms** to give the GPU enough time to rasterize without dropping frames.
 
 ---
 

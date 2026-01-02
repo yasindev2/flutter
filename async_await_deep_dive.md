@@ -108,6 +108,21 @@ This is where most developers get confused. Does the "Network Call" go into the 
 - **IMMEDIATELY**, it schedules the `await` resumption as a **Microtask**.
 - Because Microtasks have higher priority, your code runs **immediately after** the event loop finishes processing the "Completion Entry", and **before** it looks at the next UI tap or Timer in the Event Queue.
 
+### Visualizing Loop Priority
+
+```mermaid
+graph TD
+    Loop[Event Loop Cycle] --> MicroCheck{Microtasks exists?}
+    MicroCheck -- Yes --> ExecMicro[Run ALL Microtasks]
+    ExecMicro --> MicroCheck
+    MicroCheck -- No --> PickEvent[Pick Next Event from Queue]
+    PickEvent --> ExecEvent[Run Event Handler]
+    ExecEvent --> Loop
+    
+    style ExecMicro fill:#fef08a,stroke:#a16207
+    style PickEvent fill:#bfdbfe,stroke:#1e40af
+```
+
 ---
 
 ## 4. Visualizing the I/O Handshake
@@ -139,6 +154,19 @@ class LogInStateMachine {
     }
   }
 }
+```
+
+### Visualizing the State Machine Transformation
+
+```mermaid
+stateDiagram-v2
+    [*] --> SyncPart: Call logIn()
+    SyncPart --> Suspended: 'await' hit
+    note right of SyncPart: Executes print("Starting...")
+    Suspended --> Resumed: connect() completes
+    note left of Suspended: Thread is free for other work
+    Resumed --> [*]: Final Return
+    note right of Resumed: Executes print("Connected!")
 ```
 
 ---
