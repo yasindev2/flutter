@@ -213,6 +213,39 @@ graph LR
 
 ---
 
+## 6. The "Execution Gap" (PhD Deep Dive)
+
+A common point of confusion is how "blocks" of sync code are treated. If you have sync code before and after an `await`, they are **not** part of the same execution cycle.
+
+```dart
+void demo() async {
+  print("1. Sync"); // Phase A
+  print("2. Sync"); // Phase A
+  await future;    // THE GAP (Suspension)
+  print("4. Sync"); // Phase B (Resumption)
+  print("5. Sync"); // Phase B (Resumption)
+}
+```
+
+### Visualizing the Timeline
+
+```mermaid
+gantt
+    title The Timeline of a Single Function
+    dateFormat  X
+    axisFormat %s
+    
+    section Thread Execution
+    Sync Phase A (1, 2) :0, 2
+    Thread is FREE (Gap)   :2, 6
+    Sync Phase B (4, 5) :6, 8
+```
+
+> [!IMPORTANT]
+> **The Verdict**: Lines 1 and 2 are executed synchronously **immediately**. Lines 4 and 5 are executed synchronously **later**. They are strictly separated by the suspension. During "The Gap", the UI doesn't freeze because the function has physically exited the C-Stack.
+
+---
+
 ## Senior Level Takeaway
 
 - **`await` is a return statement**: It returns a `Future` to the caller.
